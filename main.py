@@ -7,7 +7,7 @@ def main():
     load_dotenv()
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if api_key is None:
-        raise RuntimeError("api key not found")
+        raise RuntimeError("API key not found")
 
     client = OpenAI(
         base_url="https://openrouter.ai/api/v1",
@@ -24,6 +24,12 @@ def main():
         ],
     )
 
+    if response.usage is None:
+        raise RuntimeError("API response appears to be malformed")
+
+    print(f"Prompt tokens: {response.usage.prompt_tokens}")
+    print(f"Response tokens: {response.usage.completion_tokens}")
+    print("Response:")
     print(response.choices[0].message.content)
 
 if __name__ == "__main__":
