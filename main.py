@@ -1,4 +1,5 @@
 import os
+import argparse
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -14,18 +15,26 @@ def main():
         api_key=api_key,
     )
 
+    parser = argparse.ArgumentParser(description="Chatbot")
+    parser.add_argument("user_prompt", type=str, help="Prompt provided by the user")
+    args = parser.parse_args()
+
     response = client.chat.completions.create(
         model="openrouter/free",
         messages=[
             {
                 "role": "user",
-                "content": "Why is Boot.dev such a great place to learn backend development? Use one paragraph maximum.",
+                "content": args.user_prompt,
             }
         ],
     )
 
     if response.usage is None:
         raise RuntimeError("API response appears to be malformed")
+
+    parser = argparse.ArgumentParser(description="Send a prompt to an AI chatbot.")
+    parser.add_argument("user_prompt", type=str, help="The message to send to the chatbot.")
+    args = parser.parse_args()
 
     print(f"Prompt tokens: {response.usage.prompt_tokens}")
     print(f"Response tokens: {response.usage.completion_tokens}")
