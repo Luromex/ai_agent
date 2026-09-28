@@ -15,8 +15,9 @@ def main():
         api_key=api_key,
     )
 
-    parser = argparse.ArgumentParser(description="Chatbot")
-    parser.add_argument("user_prompt", type=str, help="Prompt provided by the user")
+    parser = argparse.ArgumentParser(description="Send a prompt to an AI chatbot.")
+    parser.add_argument("user_prompt", type=str, help="The message to send to the chatbot.")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     args = parser.parse_args()
 
     messages=[
@@ -31,14 +32,14 @@ def main():
     if response.usage is None:
         raise RuntimeError("API response appears to be malformed")
 
-    parser = argparse.ArgumentParser(description="Send a prompt to an AI chatbot.")
-    parser.add_argument("user_prompt", type=str, help="The message to send to the chatbot.")
-    args = parser.parse_args()
-
-    print(f"Prompt tokens: {response.usage.prompt_tokens}")
-    print(f"Response tokens: {response.usage.completion_tokens}")
-    print("Response:")
-    print(response.choices[0].message.content)
+    if args.verbose: 
+        print(f"User prompt: {args.user_prompt}")
+        print(f"Prompt tokens: {response.usage.prompt_tokens}")
+        print(f"Response tokens: {response.usage.completion_tokens}")
+        print("Response:")
+        print(response.choices[0].message.content)
+    else:
+        print(response.choices[0].message.content)
 
 if __name__ == "__main__":
     main()
