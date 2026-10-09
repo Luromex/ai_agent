@@ -1,12 +1,14 @@
 import os
 import argparse
 import json
+import sys
 from dotenv import load_dotenv
 from openai import OpenAI
 from prompts import system_prompt
 from call_function import available_functions, call_function
 
 def main():
+    #setup
     load_dotenv()
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if api_key is None:
@@ -27,38 +29,47 @@ def main():
         {"role": "user", "content": args.user_prompt},
     ]
 
-    response = client.chat.completions.create(
-        model="openrouter/free",
-        messages = messages,
-        temperature=0,
-        tools=available_functions,
-    )
-
-    message = response.choices[0].message
-
-    if message.tool_calls:
-        for tool_call in message.tool_calls:
-            if tool_call.type != "function": continue
-
-            result_message = call_function(tool_call, args.verbose)
-
-            if not result_message.get("content"):
-                raise RuntimeError(f"Empty function response for {tool_call.function.name}")
-
-            if args.verbose:
-                print(f"-> {result_message['content']}")
-    else:
-        print("Response:")
-        print(message.content)
-
-
-    if response.usage is None:
-        raise RuntimeError("API response appears to be malformed")
-
     if args.verbose: 
         print(f"User prompt: {args.user_prompt}")
-        print(f"Prompt tokens: {response.usage.prompt_tokens}")
-        print(f"Response tokens: {response.usage.completion_tokens}")
+
+    #per turn
+
+    for _ in range(20):
+        response = client.chat.completions.create(
+            model="openrouter/free",
+            messages = messages,
+            temperature=0,
+            tools=available_functions,
+        )
+
+        if response.usage is None:
+            raise RuntimeError("API response appears to be malformed")
+
+        if args.verbose: 
+            print(f"Prompt tokens: {response.usage.prompt_tokens}")
+            print(f"Response tokens: {response.usage.completion_tokens}")
+
+        message = response.choices[0].message
+        messages.append(message)
+
+        if message.tool_calls:
+            for tool_call in message.tool_calls:
+                if tool_call.type != "function": continue
+                result_message = call_function(tool_call, args.verbose)
+
+                if not result_message.get("content"):
+                    raise RuntimeError(f"Empty function response for {tool_call.function.name}")
+
+                messages.append(result_message)
+
+                if args.verbose:
+                    print(f"-> {result_message['content']}")
+        else:
+            print("Response:")
+            print(message.content)
+            return
+    print("A failure has occured, the agent couldn't reach a final response")
+    sys.exit(1)
 
 if __name__ == "__main__":
     main()
